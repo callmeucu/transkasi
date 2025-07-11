@@ -1,20 +1,20 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from app.helper.helper import get_pg_connection, hash_password
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-class UserRegister(BaseModel):
-    name: str # Just dummy
+class UserRegisterUser(BaseModel):
+    name: str  # Dummy
     username: str
     password: str
 
-@router.post("/register")
-def register(user: UserRegister):
+@router.post("/register-user")
+def register_user(user: UserRegisterUser):
     try: 
         conn = get_pg_connection()
         cur = conn.cursor()
-        # Check username already exist?
+         # Check username already exist?
         cur.execute("SELECT id FROM users WHERE username = %s", (user.username,))
         if cur.fetchone():
             cur.close()
@@ -22,25 +22,21 @@ def register(user: UserRegister):
             raise HTTPException(status_code=400, detail="Username already registered")
         # Hash password
         hashed_pw = hash_password(user.password)
-        # Insert new admin
+        # Insert new user, lock role as 'user'
         cur.execute(
-            "INSERT INTO users (username, password, create_at) VALUES (%s, %s, NOW()) RETURNING id",
-            (user.username, hashed_pw)
+            "INSERT INTO users (username, password, role, create_at) VALUES (%s, %s, %s, NOW()) RETURNING id",
+            (user.username, hashed_pw, "user")
         )
         user_id = cur.fetchone()["id"]
         conn.commit()
         cur.close()
         conn.close()
         return {
-            "message": "Register as admin Successful!", 
+            "message": "Register as user successful!", 
             "user_id": user_id
         }
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
-        # Unexpected error
         print("Error:", e)
-        raise HTTPException(
-            status_code=500,
-            detail="Internal Server Error"
-        )
+        raise HTTPException(status_code=500, detail="Internal Server Error")

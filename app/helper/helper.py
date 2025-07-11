@@ -19,5 +19,5 @@ def verify_password(plain_password : str, hashed_password:str) -> bool:
 
 #koneksi sementara backend dan database
 def get_pg_connection ():
-    conn = psycopg2.connect(os.getenv("DATABASE_PUBLIC_URL"), cursor_factory=RealDictCursor)
+    conn = psycopg2.connect(os.getenv("DATABASE_URL"), cursor_factory=RealDictCursor)
     return conn
